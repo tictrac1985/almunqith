@@ -75,3 +75,33 @@ def for_categories(categories: set[str]) -> tuple[Signature, ...]:
     if "all" in categories:
         return REGISTRY
     return tuple(s for s in REGISTRY if s.category in categories)
+
+
+def _noop(data: bytes) -> ValidationResult:      # never used to validate
+    return ValidationResult(len(data), True, {})
+
+
+GENERIC = Signature("file", "other", "", (), 0, _noop, 0)
+
+_EXT_CATEGORY = {
+    ".jpg": "photos", ".jpeg": "photos", ".png": "photos", ".gif": "photos",
+    ".bmp": "photos", ".tif": "photos", ".tiff": "photos", ".heic": "photos",
+    ".cr2": "photos", ".nef": "photos", ".arw": "photos", ".psd": "photos",
+    ".mp4": "videos", ".mov": "videos", ".avi": "videos", ".mkv": "videos",
+    ".wmv": "videos", ".3gp": "videos", ".m4v": "videos", ".webm": "videos",
+    ".mp3": "audio", ".wav": "audio", ".flac": "audio", ".ogg": "audio",
+    ".aac": "audio", ".m4a": "audio", ".wma": "audio",
+    ".pdf": "documents", ".doc": "documents", ".docx": "documents",
+    ".xls": "documents", ".xlsx": "documents", ".ppt": "documents",
+    ".pptx": "documents", ".txt": "documents",
+    ".zip": "archives", ".rar": "archives", ".7z": "archives",
+}
+
+
+def signature_for_name(filename: str) -> Signature:
+    """A synthetic Signature for a filesystem-recovered file, categorized by
+    its extension so the extractor files it under the right folder."""
+    import os
+    ext = os.path.splitext(filename)[1].lower()
+    category = _EXT_CATEGORY.get(ext, "other")
+    return Signature("file", category, ext, (), 0, _noop, 0)

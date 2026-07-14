@@ -3,9 +3,15 @@ import os
 from collections import defaultdict
 from typing import Callable, Optional
 
-_TITLES = {"photos": "Photos", "videos": "Videos",
-           "documents": "Documents", "audio": "Audio", "archives": "Archives"}
+_TITLES = {"photos": "Photos", "videos": "Videos", "documents": "Documents",
+           "audio": "Audio", "archives": "Archives", "other": "Other"}
 _COPY_CHUNK = 8 * 1024 * 1024
+_BAD_CHARS = '<>:"/\\|?*'
+
+
+def _safe_name(name: str) -> str:
+    out = "".join("_" if c in _BAD_CHARS or ord(c) < 32 else c for c in name)
+    return out.strip() or "file"
 
 
 def extract(source, findings, dest_dir: str,
@@ -18,14 +24,23 @@ def extract(source, findings, dest_dir: str,
     counters: dict[str, int] = defaultdict(int)
     lines = []
     saved = 0
+    used_names: set[str] = set()
     for f in findings:
         title = _TITLES.get(f.signature.category, "Other")
         folder = os.path.join(dest_dir, title)
         os.makedirs(folder, exist_ok=True)
         counters[f.signature.category] += 1
-        suffix = "" if f.complete else "_partial"
-        name = (f"{f.signature.name}_{counters[f.signature.category]:05d}"
-                f"{suffix}{f.signature.extension}")
+        original = f.meta.get("name") if isinstance(f.meta, dict) else None
+        if original:
+            name = _safe_name(original)
+            if name in used_names:                    # avoid collisions
+                stem, ext = os.path.splitext(name)
+                name = f"{stem}_{counters[f.signature.category]:05d}{ext}"
+        else:
+            suffix = "" if f.complete else "_partial"
+            name = (f"{f.signature.name}_{counters[f.signature.category]:05d}"
+                    f"{suffix}{f.signature.extension}")
+        used_names.add(name)
         path = os.path.join(folder, name)
         with open(path, "wb") as out:
             remaining, off = f.size, f.offset
