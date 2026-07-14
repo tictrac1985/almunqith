@@ -93,3 +93,27 @@ class RebuildWorker(QThread):
             if close:
                 close()
         self.finished_rebuild.emit(videos)
+
+
+class WipeWorker(QThread):
+    """Secure-wipe thread (destructive). Runs the multi-pass overwrite +
+    format on a real device. The wipe function is injectable for testing."""
+    progress = Signal(int, int, int, str)     # done, total, pass_idx, name
+    log = Signal(str, dict)
+    finished_wipe = Signal(dict)
+
+    def __init__(self, drive_info, passes, wipe_func=None):
+        super().__init__()
+        self._drive = drive_info
+        self._passes = passes
+        if wipe_func is None:
+            from almunqith.core.wipe import secure_wipe
+            wipe_func = secure_wipe
+        self._wipe = wipe_func
+
+    def run(self):
+        summary = self._wipe(
+            self._drive, passes=self._passes,
+            on_progress=lambda d, t, i, n: self.progress.emit(d, t, i, n),
+            on_log=lambda k, **kw: self.log.emit(k, kw))
+        self.finished_wipe.emit(summary or {"ok": True})
