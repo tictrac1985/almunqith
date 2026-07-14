@@ -1,7 +1,12 @@
 """Windows drive enumeration via PowerShell (no external deps)."""
 import json
 import subprocess
+import sys
 from dataclasses import dataclass, field
+
+# In a frozen windowed app, launching a console program (powershell) pops a
+# console window unless we suppress it. This keeps drive enumeration silent.
+_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0   # CREATE_NO_WINDOW
 
 
 @dataclass
@@ -46,8 +51,8 @@ def parse_drives(disks_json: str, partitions_json: str):
 
 def _ps(cmd: str) -> str:
     out = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", cmd],
-        capture_output=True, text=True, timeout=60)
+        ["powershell", "-NoProfile", "-NonInteractive", "-Command", cmd],
+        capture_output=True, text=True, timeout=60, creationflags=_NO_WINDOW)
     return out.stdout
 
 

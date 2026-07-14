@@ -13,10 +13,13 @@ from almunqith.core.reader import ResilientReader
 def reset_usb_device(instance_id: str):
     """Power-cycle a USB device by instance id (pnputil). Best effort."""
     import subprocess
+    import sys
+    no_window = 0x08000000 if sys.platform == "win32" else 0
     for action in ("/disable-device", "/enable-device"):
         try:
             subprocess.run(["pnputil", action, instance_id],
-                           capture_output=True, timeout=60)
+                           capture_output=True, timeout=60,
+                           creationflags=no_window)
         except Exception:
             pass
 

@@ -61,6 +61,12 @@ class DrivePage(QWidget):
             drives = self._provider()
         except Exception:
             return
+        # skip the rebuild entirely when the connected drives haven't changed,
+        # so the periodic auto-refresh doesn't churn the UI
+        sig = tuple((d.path, d.size, tuple(d.letters)) for d in drives)
+        if sig == getattr(self, "_last_sig", None):
+            return
+        self._last_sig = sig
         selected_path = self.selected.path if self.selected else None
         while self._cards_row.count():
             item = self._cards_row.takeAt(0)

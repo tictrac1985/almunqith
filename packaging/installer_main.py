@@ -30,6 +30,9 @@ def install_dir() -> str:
     return os.path.join(root, "Programs", APP_NAME)
 
 
+_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
+
+
 def _make_shortcut(link_path: str, target: str, icon: str, desc: str):
     ps = (
         "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{link}');"
@@ -40,8 +43,8 @@ def _make_shortcut(link_path: str, target: str, icon: str, desc: str):
         "$s.Save()"
     ).format(link=link_path, target=target, icon=icon, desc=desc,
              wd=os.path.dirname(target))
-    subprocess.run(["powershell", "-NoProfile", "-Command", ps],
-                   capture_output=True)
+    subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
+                   capture_output=True, creationflags=_NO_WINDOW)
 
 
 def _register_uninstall(app_exe: str, uninstaller: str, icon: str):
@@ -129,7 +132,8 @@ def do_uninstall(progress=lambda pct, msg: None):
                 f'rmdir /s /q "{dest}"\r\n'
                 f'if exist "{dest}" (ping 127.0.0.1 -n 2 >nul & goto retry)\r\n'
                 f'del "%~f0"\r\n')
-    subprocess.Popen(["cmd", "/c", bat], creationflags=0x08000000)
+    subprocess.Popen(["cmd", "/c", bat],
+                     creationflags=0x08000000 | 0x00000008)  # NO_WINDOW|DETACHED
     progress(100, "done")
 
 
