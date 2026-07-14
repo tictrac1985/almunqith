@@ -8,3 +8,6 @@ build/
 tools/shots/
 build/
 dist/
+_installtest/
+dist_setup/
+Release/

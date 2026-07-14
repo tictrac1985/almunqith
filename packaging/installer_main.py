@@ -133,6 +133,18 @@ def do_uninstall(progress=lambda pct, msg: None):
     progress(100, "done")
 
 
+def _silent():
+    """Headless install/uninstall for automated testing (no GUI)."""
+    if "--uninstall" in sys.argv:
+        do_uninstall(lambda p, m: print(f"{p}% {m}", flush=True))
+    else:
+        exe = do_install(lambda p, m: print(f"{p}% {m}", flush=True))
+        print("INSTALLED_EXE=" + exe, flush=True)
+
+
 if __name__ == "__main__":
-    from almunqith_setup_ui import run_gui  # bundled sibling module
-    run_gui(sys.argv)
+    if os.environ.get("ALMUNQITH_SILENT") == "1":
+        _silent()
+    else:
+        from almunqith_setup_ui import run_gui  # bundled sibling module
+        run_gui(sys.argv)
