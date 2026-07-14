@@ -11,6 +11,7 @@ inside an already-recovered named file.
 from almunqith.core.carve.scanner import scan, Finding
 from almunqith.core.carve.signatures import for_categories, signature_for_name
 from almunqith.core.fs import scan as fs_scan
+from almunqith.core.rebuild.mjpeg_avi import rebuild_videos
 
 
 class Events:
@@ -65,3 +66,17 @@ def run_scan(source, categories: set, events: Events,
 
     events.on_log("scan_finished", found=len(findings))
     return findings
+
+
+def rebuild_fragmented_videos(source, out_dir, events: Events,
+                              *, region_end=None):
+    """Level-4 processor: reassemble fragmented MJPEG camera videos into
+    playable AVIs. This is the technique that recovered the session's videos
+    when the container was lost but the frames survived."""
+    end = region_end or source.size
+    events.on_log("rebuild_started", region=end)
+    videos = rebuild_videos(
+        source, 0, end, out_dir,
+        on_event=lambda k, **kw: events.on_log(k, **kw))
+    events.on_log("rebuild_finished", videos=len(videos))
+    return videos
