@@ -1,7 +1,7 @@
 """Qt worker threads bridging the core engine to the UI."""
 from PySide6.QtCore import QThread, Signal
 
-from almunqith.core.pipeline import Events, run_scan
+from almunqith.core.pipeline import Events, run_scan, rebuild_fragmented_videos
 from almunqith.core.extract import extract
 
 
@@ -63,3 +63,33 @@ class ExtractWorker(QThread):
             if close:
                 close()
         self.finished_extract.emit(summary)
+
+
+class _LogRelay(Events):
+    def __init__(self, worker):
+        self.w = worker
+
+    def on_log(self, key, **kw):
+        self.w.log.emit(key, kw)
+
+
+class RebuildWorker(QThread):
+    """Level-4 processor thread: rebuild fragmented MJPEG videos."""
+    log = Signal(str, dict)
+    finished_rebuild = Signal(list)
+
+    def __init__(self, source_factory, out_dir):
+        super().__init__()
+        self._factory = source_factory
+        self._out = out_dir
+
+    def run(self):
+        source = self._factory()
+        try:
+            videos = rebuild_fragmented_videos(source, self._out,
+                                               _LogRelay(self))
+        finally:
+            close = getattr(source, "close", None)
+            if close:
+                close()
+        self.finished_rebuild.emit(videos)

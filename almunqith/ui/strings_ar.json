@@ -49,5 +49,8 @@
   "saved_summary": "🎉 تم حفظ {n} ملفًا بنجاح!",
   "open_folder": "📂 فتح مجلد الملفات المستعادة",
   "partial_tag": "جزئي",
+  "rebuild_videos": "🎬 أعد بناء الفيديوهات المجزأة (للكاميرات — MJPEG)",
+  "rebuilding": "جارٍ إعادة بناء الفيديوهات...",
+  "saved_and_rebuilt": "🎉 حُفظ {n} ملفًا وأُعيد بناء {v} فيديو!",
   "language": "🌐 English"
 }

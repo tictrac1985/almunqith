@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QListWidgetItem, QCheckBox)
 
 from almunqith.ui.i18n import tr
-from almunqith.ui.worker import ExtractWorker
+from almunqith.ui.worker import ExtractWorker, RebuildWorker
 
 _CAT_ICON = {"photos": "🖼️", "videos": "🎬", "documents": "📄",
              "audio": "🎵", "archives": "🗜️"}
@@ -29,6 +29,10 @@ class ResultsPage(QWidget):
         self._hint = QLabel()
         self._hint.setObjectName("subtitle")
         self._tabs = QTabWidget()
+        self._rebuild_chk = QCheckBox()
+        self._rebuild_chk.setChecked(False)
+        self._rebuild_chk.hide()
+
         bottom = QHBoxLayout()
         self._select_all = QCheckBox()
         self._select_all.setChecked(True)
@@ -47,8 +51,12 @@ class ResultsPage(QWidget):
         layout.addWidget(self._title)
         layout.addWidget(self._hint)
         layout.addWidget(self._tabs, 1)
+        layout.addWidget(self._rebuild_chk)
         layout.addLayout(bottom)
         self._last_dest = None
+        self._rebuild_worker = None
+        self._pending_rebuild = False
+        self._rebuild_available = False
         self._open_btn.clicked.connect(self._open_folder)
         self.retranslate()
 
@@ -58,6 +66,7 @@ class ResultsPage(QWidget):
         self._select_all.setText(tr("select_all"))
         self._extract_btn.setText(tr("extract_selected"))
         self._open_btn.setText(tr("open_folder"))
+        self._rebuild_chk.setText(tr("rebuild_videos"))
 
     def load(self, findings, reader=None):
         self._reader = reader
@@ -92,6 +101,12 @@ class ResultsPage(QWidget):
             icon = _CAT_ICON.get(cat, "📁")
             self._tabs.addTab(lst, f"{icon} {tr('cat_' + cat)} ({len(items)})"
                               if ("cat_" + cat) else f"{icon} {cat} ({len(items)})")
+        # Offer MJPEG video rebuild when video findings exist, or when there
+        # are many photo findings — camera video frames carve as JPEGs, so a
+        # large photo count often means fragmented Motion-JPEG video.
+        many_photos = len(by_cat.get("photos", [])) >= 20
+        self._rebuild_available = ("videos" in by_cat or many_photos)
+        self._rebuild_chk.setVisible(self._rebuild_available)
 
     def _toggle_all(self, state):
         st = Qt.Checked if state else Qt.Unchecked
@@ -110,15 +125,36 @@ class ResultsPage(QWidget):
 
     def extract_to(self, dest, source_factory, source_drive=None):
         self._last_dest = dest
+        self._source_factory = source_factory
         self._extract_btn.setEnabled(False)
         self._status.setText(tr("extracting"))
+        self._pending_rebuild = (self._rebuild_available
+                                 and self._rebuild_chk.isChecked())
         self._worker = ExtractWorker(source_factory, self.selected_findings(),
                                      dest, source_drive=source_drive)
         self._worker.finished_extract.connect(self._on_extracted)
         self._worker.start()
 
     def _on_extracted(self, summary):
-        self._status.setText(tr("saved_summary", n=summary["saved"]))
+        self._last_summary = summary
+        if self._pending_rebuild and self._source_factory:
+            self._status.setText(tr("rebuilding"))
+            out = os.path.join(self._last_dest, "Videos_Rebuilt")
+            self._rebuild_worker = RebuildWorker(self._source_factory, out)
+            self._rebuild_worker.finished_rebuild.connect(self._on_rebuilt)
+            self._rebuild_worker.start()
+            return
+        self._finish(summary)
+
+    def _on_rebuilt(self, videos):
+        self._finish(self._last_summary, rebuilt=len(videos))
+
+    def _finish(self, summary, rebuilt=0):
+        if rebuilt:
+            self._status.setText(tr("saved_and_rebuilt", n=summary["saved"],
+                                    v=rebuilt))
+        else:
+            self._status.setText(tr("saved_summary", n=summary["saved"]))
         self._extract_btn.setEnabled(True)
         self._open_btn.show()
         self.extract_done.emit(summary)

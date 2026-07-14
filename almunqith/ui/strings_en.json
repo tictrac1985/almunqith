@@ -49,5 +49,8 @@
   "saved_summary": "🎉 {n} files saved successfully!",
   "open_folder": "📂 Open recovered files folder",
   "partial_tag": "partial",
+  "rebuild_videos": "🎬 Rebuild fragmented videos (cameras — MJPEG)",
+  "rebuilding": "Rebuilding videos...",
+  "saved_and_rebuilt": "🎉 Saved {n} files and rebuilt {v} videos!",
   "language": "🌐 العربية"
 }
