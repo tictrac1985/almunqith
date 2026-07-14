@@ -6,3 +6,5 @@ build/
 .venv/
 *.egg-info/
 tools/shots/
+build/
+dist/
