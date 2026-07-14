@@ -5,3 +5,4 @@ build/
 *.img
 .venv/
 *.egg-info/
+tools/shots/
