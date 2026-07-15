@@ -130,8 +130,17 @@ class Wizard(QMainWindow):
         self.types_page.selection_changed.connect(self._sync_nav)
         self.dest_page.selection_changed.connect(self._sync_nav)
         self.scan_page.scan_done.connect(self._on_scan_done)
+        self.results_page.extract_requested.connect(self._do_extract)
         self.results_page.extract_done.connect(lambda s: self._sync_nav())
         return container
+
+    def _do_extract(self):
+        """Run extraction of the selected findings to the chosen destination."""
+        dest = self.dest_page.path
+        if not dest:
+            return
+        self.results_page.extract_to(dest, self._source_factory(),
+                                     source_drive=self._source_drive_letter())
 
     def _source_factory(self):
         if self._source_override:

@@ -22,7 +22,13 @@ a = Analysis(
     excludes=["tkinter", "pytest", "PySide6.QtWebEngineCore",
               "PySide6.QtWebEngineWidgets", "PySide6.Qt3DCore",
               "PySide6.QtCharts", "PySide6.QtDataVisualization",
-              "PySide6.QtQuick", "PySide6.QtQml", "PySide6.QtMultimedia"],
+              "PySide6.QtQuick", "PySide6.QtQml", "PySide6.QtMultimedia",
+              "PySide6.QtNetwork", "PySide6.QtSql", "PySide6.QtQuick3D",
+              "PySide6.QtPdf", "PySide6.QtPdfWidgets", "PySide6.QtWebSockets",
+              "PySide6.QtWebChannel", "PySide6.QtPositioning",
+              "PySide6.QtBluetooth", "PySide6.QtNfc", "PySide6.QtSensors",
+              "PySide6.QtSerialPort", "PySide6.QtTest", "PySide6.QtOpenGL",
+              "PySide6.QtQuickWidgets", "PySide6.QtRemoteObjects"],
     noarchive=False,
 )
 pyz = PYZ(a.pure)
@@ -41,6 +47,6 @@ exe = EXE(
     console=False,               # windowed app, no terminal
     disable_windowed_traceback=False,
     icon=os.path.join(ROOT, "packaging", "almunqith.ico"),
-    uac_admin=False,             # app self-elevates at runtime (see ui/elevate)
+    uac_admin=True,              # elevate at launch (one process, one unpack)
     version_file=None,
 )

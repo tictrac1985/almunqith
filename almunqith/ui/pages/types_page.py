@@ -5,14 +5,14 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QGridLayout, QLabel,
 
 from almunqith.ui.i18n import tr
 
-# category key -> (label key, enabled in M1/M2 engine)
+# category key -> (label key, enabled) — all categories now have validators
 _CATS = [
     ("all", "cat_all", True),
     ("photos", "cat_photos", True),
     ("videos", "cat_videos", True),
-    ("documents", "cat_documents", False),
-    ("audio", "cat_audio", False),
-    ("archives", "cat_archives", False),
+    ("documents", "cat_documents", True),
+    ("audio", "cat_audio", True),
+    ("archives", "cat_archives", True),
 ]
 
 

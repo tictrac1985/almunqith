@@ -95,6 +95,22 @@ class RebuildWorker(QThread):
         self.finished_rebuild.emit(videos)
 
 
+class DrivesWorker(QThread):
+    """Enumerate drives off the UI thread so pages never freeze."""
+    drives_ready = Signal(list)
+
+    def __init__(self, provider):
+        super().__init__()
+        self._provider = provider
+
+    def run(self):
+        try:
+            drives = self._provider()
+        except Exception:
+            drives = []
+        self.drives_ready.emit(drives)
+
+
 class WipeWorker(QThread):
     """Secure-wipe thread (destructive). Runs the multi-pass overwrite +
     format on a real device. The wipe function is injectable for testing."""

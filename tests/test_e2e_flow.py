@@ -38,11 +38,29 @@ def test_full_journey_on_image(qtbot, tmp_path):
     assert w.current_index() == 4
     assert len(w.results_page.selected_findings()) == 1
 
-    # extract
+    # extract via the actual button signal (regression: button was unwired)
     with qtbot.waitSignal(w.results_page.extract_done, timeout=15000):
-        w.results_page.extract_to(str(dest), w._source_factory())
+        w.results_page.extract_requested.emit()
     assert (dest / "Photos" / "jpeg_00001.jpg").exists()
     assert (dest / "report.txt").exists()
+
+
+def test_extract_button_is_connected():
+    """Regression: the Recover button must emit extract_requested."""
+    from almunqith.ui.pages.results_page import ResultsPage
+    page = ResultsPage()
+    fired = []
+    page.extract_requested.connect(lambda: fired.append(True))
+    page._extract_btn.click()
+    assert fired == [True]
+
+
+def test_all_file_categories_are_selectable():
+    """Regression: documents/audio/archives must be enabled (engine supports them)."""
+    from almunqith.ui.pages.types_page import TypesPage
+    page = TypesPage()
+    for key in ("photos", "videos", "documents", "audio", "archives", "all"):
+        assert page._buttons[key].isEnabled(), f"{key} should be selectable"
 
 
 def test_video_rebuild_checkbox_flow(qtbot, tmp_path):

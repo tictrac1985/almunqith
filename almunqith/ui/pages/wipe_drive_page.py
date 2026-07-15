@@ -34,11 +34,12 @@ class WipeDrivePage(QWidget):
         layout.addStretch(1)
         self._group = QButtonGroup(self)
         self._group.setExclusive(True)
+        self._loader = None
         self.timer = QTimer(self)
-        self.timer.setInterval(3000)
+        self.timer.setInterval(5000)
         self.timer.timeout.connect(self.refresh)
         self.retranslate()
-        self.refresh()
+        # drives are loaded asynchronously on enter(), not at construction
 
     def retranslate(self):
         self._title.setText(tr("wipe_drive_q"))
@@ -54,10 +55,14 @@ class WipeDrivePage(QWidget):
         return f"{icon}  {d.friendly} {letters}\n{gb:.1f} {tr('gb')}"
 
     def refresh(self):
-        try:
-            drives = self._provider()
-        except Exception:
+        if self._loader is not None and self._loader.isRunning():
             return
+        from almunqith.ui.worker import DrivesWorker
+        self._loader = DrivesWorker(self._provider)
+        self._loader.drives_ready.connect(self._apply)
+        self._loader.start()
+
+    def _apply(self, drives):
         sig = tuple((d.path, d.size, tuple(d.letters), d.is_system) for d in drives)
         if sig == getattr(self, "_last_sig", None):
             return

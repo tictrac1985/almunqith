@@ -16,6 +16,7 @@ _CAT_ICON = {"photos": "🖼️", "videos": "🎬", "documents": "📄",
 
 class ResultsPage(QWidget):
     extract_done = Signal(dict)
+    extract_requested = Signal()
 
     def __init__(self):
         super().__init__()
@@ -41,6 +42,7 @@ class ResultsPage(QWidget):
         self._status.setObjectName("okstatus")
         self._extract_btn = QPushButton()
         self._extract_btn.setObjectName("success")
+        self._extract_btn.clicked.connect(self.extract_requested)
         self._open_btn = QPushButton()
         self._open_btn.setObjectName("primary")
         self._open_btn.hide()

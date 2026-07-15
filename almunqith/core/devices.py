@@ -57,8 +57,15 @@ def _ps(cmd: str) -> str:
 
 
 def list_drives():
-    disks = _ps("Get-Disk | Select-Object Number,FriendlyName,BusType,Size,IsBoot"
-                " | ConvertTo-Json")
-    parts = _ps("Get-Partition | Select-Object DiskNumber,DriveLetter"
-                " | ConvertTo-Json")
+    # one PowerShell process instead of two — process startup dominates cost
+    combined = _ps(
+        "$d = Get-Disk | Select-Object Number,FriendlyName,BusType,Size,IsBoot; "
+        "$p = Get-Partition | Select-Object DiskNumber,DriveLetter; "
+        "[pscustomobject]@{disks=@($d); parts=@($p)} | ConvertTo-Json -Depth 4")
+    try:
+        obj = json.loads(combined) if combined.strip() else {}
+    except json.JSONDecodeError:
+        obj = {}
+    disks = json.dumps(obj.get("disks", []))
+    parts = json.dumps(obj.get("parts", []))
     return parse_drives(disks, parts)

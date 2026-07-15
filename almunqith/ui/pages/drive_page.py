@@ -36,11 +36,13 @@ class DrivePage(QWidget):
         self._layout.addWidget(self._footer)
         self._group = QButtonGroup(self)
         self._group.setExclusive(True)
+        self._loader = None
         self.timer = QTimer(self)
-        self.timer.setInterval(3000)
+        self.timer.setInterval(5000)
         self.timer.timeout.connect(self.refresh)
         self.retranslate()
-        self.refresh()
+        # NOTE: no synchronous enumeration here — it blocks startup. Drives are
+        # loaded asynchronously when the page is entered.
 
     def retranslate(self):
         self._title.setText(tr("drive_question"))
@@ -57,10 +59,15 @@ class DrivePage(QWidget):
         return f"{icon}  {d.friendly} {letters}\n{gb:.1f} {tr('gb')} • {bus}{tag}"
 
     def refresh(self):
-        try:
-            drives = self._provider()
-        except Exception:
+        # load drives off the UI thread; _apply() runs when results arrive
+        if self._loader is not None and self._loader.isRunning():
             return
+        from almunqith.ui.worker import DrivesWorker
+        self._loader = DrivesWorker(self._provider)
+        self._loader.drives_ready.connect(self._apply)
+        self._loader.start()
+
+    def _apply(self, drives):
         # skip the rebuild entirely when the connected drives haven't changed,
         # so the periodic auto-refresh doesn't churn the UI
         sig = tuple((d.path, d.size, tuple(d.letters)) for d in drives)
